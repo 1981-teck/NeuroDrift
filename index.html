@@ -17,58 +17,48 @@
         }
         h1 { font-weight: 200; letter-spacing: 6px; margin-bottom: 20px; font-size: 1.5em; color: #fff; }
         
-        /* Contenitore Visualizzatore */
         .viz-container { 
-            position: relative; 
-            width: 100%; 
-            height: 100px; 
-            background: #050505; 
-            border-radius: 12px; 
-            margin-bottom: 20px; 
-            overflow: hidden; 
-            border: 1px solid #333; 
+            position: relative; width: 100%; height: 100px; background: #050505; 
+            border-radius: 12px; margin-bottom: 20px; overflow: hidden; border: 1px solid #333; 
         }
-        canvas { 
-            display: block;
-            width: 100%; 
-            height: 100%; 
-        }
+        #visualizer { width: 100%; height: 100%; display: block; }
+        
         .viz-info {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
-            pointer-events: none; color: rgba(255, 255, 255, 0.4); font-size: 0.65em; line-height: 1.5; text-align: left; padding: 15px;
-            box-sizing: border-box; font-weight: 300;
+            pointer-events: none; color: rgba(255, 255, 255, 0.3); font-size: 0.6em; line-height: 1.4; padding: 12px;
+            box-sizing: border-box; z-index: 2;
         }
 
-        .control-group { margin-bottom: 22px; text-align: left; }
-        label { display: block; margin-bottom: 8px; font-size: 0.7em; text-transform: uppercase; letter-spacing: 1px; color: #777; }
+        .control-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; margin-bottom: 6px; font-size: 0.7em; text-transform: uppercase; letter-spacing: 1px; color: #777; }
         .value-display { float: right; font-size: 0.85em; color: #fff; font-weight: bold; }
-        .sub-label { font-size: 0.65em; color: #555; display: block; margin-top: 5px; line-height: 1.3; }
+        .sub-label { font-size: 0.65em; color: #555; display: block; margin-top: 4px; }
 
-        .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
         .preset-btn { 
-            background: #1a1a1a; border: 1px solid #333; color: #888; padding: 8px; 
-            font-size: 0.7em; border-radius: 8px; cursor: pointer; transition: 0.2s;
+            background: #1a1a1a; border: 1px solid #333; color: #888; padding: 6px; 
+            font-size: 0.7em; border-radius: 6px; cursor: pointer; transition: 0.2s;
         }
-        .preset-btn:hover { background: #222; color: #fff; border-color: #555; }
+        .preset-btn:hover { background: #222; color: #fff; }
 
         #playBtn {
             background: transparent; border: 2px solid #fff; color: #fff;
-            width: 65px; height: 65px; font-size: 22px; border-radius: 50%;
-            cursor: pointer; transition: 0.3s; margin-bottom: 20px;
+            width: 60px; height: 60px; font-size: 20px; border-radius: 50%;
+            cursor: pointer; transition: 0.3s; margin-bottom: 15px;
         }
-        #playBtn.active { background: #fff; color: #000; box-shadow: 0 0 20px rgba(255,255,255,0.4); }
+        #playBtn.active { background: #fff; color: #000; }
 
         input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; background: #fff; border-radius: 50%; cursor: pointer; }
 
-        .switch-container { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
-        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch-container { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+        .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider-switch { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 20px; }
-        .slider-switch:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider-switch:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider-switch { background-color: #4caf50; }
-        input:checked + .slider-switch:before { transform: translateX(20px); }
+        input:checked + .slider-switch:before { transform: translateX(16px); }
     </style>
 </head>
 <body>
@@ -79,9 +69,9 @@
         <div class="viz-container">
             <canvas id="visualizer"></canvas>
             <div class="viz-info">
-                <div>• <b>1-20 Hz</b>: Vibrazioni (Trasduttori ossei)</div>
-                <div>• <b>100-400 Hz</b>: Gold Standard Binaurale</div>
-                <div>• <b>432/528 Hz</b>: Meditazione e Solfeggio</div>
+                <div>• 1-20 Hz: Vibrazioni (Trasduttori ossei)</div>
+                <div>• 100-400 Hz: Gold Standard Binaurale</div>
+                <div>• 432/528 Hz: Meditazione e Solfeggio</div>
             </div>
         </div>
 
@@ -101,15 +91,11 @@
                 <button class="preset-btn" onclick="setFreq(10, 'ALPHA: Relax Vigile')">Alpha (10Hz)</button>
                 <button class="preset-btn" onclick="setFreq(20, 'BETA: Focus Alto')">Beta (20Hz)</button>
             </div>
-            
             <div class="switch-container">
                 <span class="sub-label" id="freqDesc">Ottimale per il rilassamento.</span>
                 <div style="text-align: right;">
-                    <span style="font-size: 0.6em; color: #777; margin-right: 5px; vertical-align: middle;">MONO / BINAURAL</span>
-                    <label class="switch">
-                        <input type="checkbox" id="modeSwitch">
-                        <span class="slider-switch"></span>
-                    </label>
+                    <span style="font-size: 0.6em; color: #777; vertical-align: middle; margin-right:5px;">MONO / BINAURAL</span>
+                    <label class="switch"><input type="checkbox" id="modeSwitch"><span class="slider-switch"></span></label>
                 </div>
             </div>
         </div>
@@ -120,6 +106,11 @@
         </div>
 
         <div class="control-group">
+            <label>Tonalità Rumore <span id="filterVal" class="value-display">Morbido</span></label>
+            <input type="range" id="filterSlider" min="200" max="4000" value="1000" step="10">
+        </div>
+
+        <div class="control-group">
             <label>Volume Rumore <span id="volNoiseVal" class="value-display">30%</span></label>
             <input type="range" id="volNoiseSlider" min="0" max="1" value="0.3" step="0.01">
         </div>
@@ -127,22 +118,18 @@
         <div class="control-group">
             <label>Timer <span id="timerVal" class="value-display">OFF</span></label>
             <input type="range" id="timerSlider" min="0" max="120" value="0" step="5">
-            <div style="margin-top: 10px; font-size: 0.7em;">
-                <input type="checkbox" id="sweepCheck"> <label style="display:inline; text-transform: none; color: #aaa;">Abilita <b>Auto-Sweep</b></label>
+            <div style="margin-top: 8px; font-size: 0.7em;">
+                <input type="checkbox" id="sweepCheck"> <label style="display:inline; color: #aaa;">Abilita <b>Auto-Sweep</b></label>
             </div>
-            <span class="sub-label" id="timerStatus">Spegnimento automatico con dissolvenza.</span>
         </div>
     </div>
 
     <script>
-        let audioCtx, oscLeft, oscRight, merger, mainGain, noiseGain, noiseNode, analyzer;
+        let audioCtx, oscLeft, oscRight, merger, mainGain, noiseGain, noiseNode, filterNode, analyzer;
         let isPlaying = false;
         let timerInterval;
 
         const playBtn = document.getElementById('playBtn');
-        const freqSlider = document.getElementById('freqSlider');
-        const baseFreqSlider = document.getElementById('baseFreqSlider');
-        const modeSwitch = document.getElementById('modeSwitch');
         const canvas = document.getElementById('visualizer');
         const canvasCtx = canvas.getContext('2d');
 
@@ -150,13 +137,15 @@
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             analyzer = audioCtx.createAnalyser();
             analyzer.fftSize = 256;
+            
             merger = audioCtx.createChannelMerger(2);
             mainGain = audioCtx.createGain();
             mainGain.gain.value = document.getElementById('volToneSlider').value;
+            
             mainGain.connect(analyzer);
             mainGain.connect(audioCtx.destination);
 
-            // Rumore Rosa
+            // Setup Pink Noise con Filtro
             const bufferSize = audioCtx.sampleRate * 2;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
@@ -172,22 +161,31 @@
             noiseNode = audioCtx.createBufferSource();
             noiseNode.buffer = buffer;
             noiseNode.loop = true;
+            
+            filterNode = audioCtx.createBiquadFilter();
+            filterNode.type = 'lowpass';
+            filterNode.frequency.value = document.getElementById('filterSlider').value;
+            
             noiseGain = audioCtx.createGain();
             noiseGain.gain.value = document.getElementById('volNoiseSlider').value;
-            noiseNode.connect(noiseGain);
+
+            noiseNode.connect(filterNode);
+            filterNode.connect(noiseGain);
             noiseGain.connect(audioCtx.destination);
         }
 
-        function startOscillators() {
-            const base = parseFloat(baseFreqSlider.value);
-            const beat = parseFloat(freqSlider.value);
+        function startAudio() {
+            const base = parseFloat(document.getElementById('baseFreqSlider').value);
+            const beat = parseFloat(document.getElementById('freqSlider').value);
+            
             oscLeft = audioCtx.createOscillator();
             oscRight = audioCtx.createOscillator();
             oscLeft.type = oscRight.type = 'sine';
+            
             oscLeft.frequency.setValueAtTime(base, audioCtx.currentTime);
             oscRight.frequency.setValueAtTime(base + beat, audioCtx.currentTime);
 
-            if (modeSwitch.checked) {
+            if (document.getElementById('modeSwitch').checked) {
                 oscLeft.connect(mainGain);
                 oscRight.connect(mainGain);
             } else {
@@ -195,9 +193,12 @@
                 oscRight.connect(merger, 0, 1);
                 merger.connect(mainGain);
             }
-            oscLeft.start(); oscRight.start(); noiseNode.start();
-            drawVisualizer(); // Avvia il disegno
-            handleTimerAndSweep();
+            
+            oscLeft.start();
+            oscRight.start();
+            noiseNode.start();
+            draw();
+            handleTimer();
         }
 
         function stopAudio() {
@@ -208,21 +209,17 @@
             isPlaying = false;
         }
 
-        function drawVisualizer() {
-            if(!isPlaying) {
-                // Pulisce il canvas quando si ferma
-                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-                return;
-            }
-            requestAnimationFrame(drawVisualizer);
+        function draw() {
+            if(!isPlaying) return;
+            requestAnimationFrame(draw);
             const bufferLength = analyzer.frequencyBinCount;
             const dataArray = new Uint8Array(bufferLength);
             analyzer.getByteTimeDomainData(dataArray);
 
             canvasCtx.fillStyle = '#050505';
             canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-            canvasCtx.lineWidth = 2; 
-            canvasCtx.strokeStyle = '#4caf50'; // VERDE BRILLANTE per visibilità
+            canvasCtx.lineWidth = 2;
+            canvasCtx.strokeStyle = '#ffffff'; // Onda BIANCA per massima visibilità
             canvasCtx.beginPath();
             
             let sliceWidth = canvas.width / bufferLength;
@@ -242,78 +239,84 @@
             if (audioCtx.state === 'suspended') await audioCtx.resume();
             
             if (!isPlaying) {
-                initAudio(); 
-                startOscillators();
-                playBtn.textContent = "II"; 
-                playBtn.classList.add("active"); 
                 isPlaying = true;
+                initAudio();
+                startAudio();
+                playBtn.textContent = "II";
+                playBtn.classList.add("active");
             } else {
-                stopAudio(); 
-                playBtn.textContent = "▶"; 
+                stopAudio();
+                playBtn.textContent = "▶";
                 playBtn.classList.remove("active");
+                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
             }
         }
 
-        function setFreq(val, desc) {
-            freqSlider.value = val;
-            document.getElementById('freqVal').textContent = val + " Hz";
-            document.getElementById('freqDesc').textContent = desc;
-            if(isPlaying && oscRight) oscRight.frequency.setTargetAtTime(parseFloat(baseFreqSlider.value) + parseFloat(val), audioCtx.currentTime, 0.2);
-        }
-
-        // Listeners
-        playBtn.addEventListener('click', togglePlay);
-        baseFreqSlider.addEventListener('input', (e) => {
+        // Eventi Slider
+        document.getElementById('baseFreqSlider').addEventListener('input', (e) => {
             document.getElementById('baseFreqVal').textContent = e.target.value + " Hz";
             if(isPlaying) {
-                const beat = parseFloat(freqSlider.value);
+                const beat = parseFloat(document.getElementById('freqSlider').value);
                 oscLeft.frequency.setTargetAtTime(parseFloat(e.target.value), audioCtx.currentTime, 0.2);
                 oscRight.frequency.setTargetAtTime(parseFloat(e.target.value) + beat, audioCtx.currentTime, 0.2);
             }
         });
-        freqSlider.addEventListener('input', (e) => {
+
+        document.getElementById('freqSlider').addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
             document.getElementById('freqVal').textContent = val + " Hz";
-            if(isPlaying) oscRight.frequency.setTargetAtTime(parseFloat(baseFreqSlider.value) + val, audioCtx.currentTime, 0.2);
+            if(isPlaying) oscRight.frequency.setTargetAtTime(parseFloat(document.getElementById('baseFreqSlider').value) + val, audioCtx.currentTime, 0.2);
         });
-        volToneSlider = document.getElementById('volToneSlider');
-        volToneSlider.addEventListener('input', (e) => {
+
+        document.getElementById('filterSlider').addEventListener('input', (e) => {
+            const val = e.target.value;
+            document.getElementById('filterVal').textContent = val < 800 ? "Cupo" : (val > 2500 ? "Brillante" : "Morbido");
+            if(filterNode) filterNode.frequency.setTargetAtTime(val, audioCtx.currentTime, 0.1);
+        });
+
+        document.getElementById('volToneSlider').addEventListener('input', (e) => {
             document.getElementById('volToneVal').textContent = Math.round(e.target.value * 100) + "%";
             if(mainGain) mainGain.gain.setTargetAtTime(e.target.value, audioCtx.currentTime, 0.1);
         });
-        volNoiseSlider = document.getElementById('volNoiseSlider');
-        volNoiseSlider.addEventListener('input', (e) => {
+
+        document.getElementById('volNoiseSlider').addEventListener('input', (e) => {
             document.getElementById('volNoiseVal').textContent = Math.round(e.target.value * 100) + "%";
             if(noiseGain) noiseGain.gain.setTargetAtTime(e.target.value, audioCtx.currentTime, 0.1);
         });
-        timerSlider = document.getElementById('timerSlider');
-        timerSlider.addEventListener('input', (e) => {
+
+        document.getElementById('timerSlider').addEventListener('input', (e) => {
             document.getElementById('timerVal').textContent = e.target.value > 0 ? e.target.value + " min" : "OFF";
         });
 
-        function handleTimerAndSweep() {
-            const mins = parseInt(timerSlider.value);
+        function setFreq(val, desc) {
+            document.getElementById('freqSlider').value = val;
+            document.getElementById('freqVal').textContent = val + " Hz";
+            document.getElementById('freqDesc').textContent = desc;
+            if(isPlaying) oscRight.frequency.setTargetAtTime(parseFloat(document.getElementById('baseFreqSlider').value) + parseFloat(val), audioCtx.currentTime, 0.2);
+        }
+
+        function handleTimer() {
+            const mins = parseInt(document.getElementById('timerSlider').value);
             if (mins <= 0) return;
             let totalSecs = mins * 60;
             let currentSec = 0;
-            const startFreq = parseFloat(freqSlider.value);
+            const startFreq = parseFloat(document.getElementById('freqSlider').value);
             timerInterval = setInterval(() => {
                 currentSec++;
                 let remaining = totalSecs - currentSec;
-                document.getElementById('timerStatus').textContent = `${Math.ceil(remaining/60)} min rimasti`;
                 if (document.getElementById('sweepCheck').checked && startFreq > 1.0) {
                     let newFreq = startFreq - ((startFreq - 1.0) * (currentSec / totalSecs));
-                    freqSlider.value = newFreq;
-                    document.getElementById('freqVal').textContent = newFreq.toFixed(1) + " Hz";
-                    if(isPlaying) oscRight.frequency.setTargetAtTime(parseFloat(baseFreqSlider.value) + newFreq, audioCtx.currentTime, 1);
+                    if(isPlaying) oscRight.frequency.setTargetAtTime(parseFloat(document.getElementById('baseFreqSlider').value) + newFreq, audioCtx.currentTime, 1);
                 }
-                if (remaining <= 15) {
+                if (remaining <= 10) {
                     mainGain.gain.setTargetAtTime(0, audioCtx.currentTime, 5);
                     noiseGain.gain.setTargetAtTime(0, audioCtx.currentTime, 5);
                 }
                 if (remaining <= 0) togglePlay();
             }, 1000);
         }
+
+        playBtn.addEventListener('click', togglePlay);
     </script>
 </body>
 </html>
