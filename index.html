@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generatore Onde Cerebrali Pro</title>
+    <title>NeuroDrift: Advanced Binaural Sync</title>
     <style>
         body {
             background-color: #000000; color: #e0e0e0;
@@ -24,7 +24,6 @@
         .value-display { float: right; font-size: 0.85em; color: #fff; font-weight: bold; }
         .sub-label { font-size: 0.65em; color: #555; display: block; margin-top: 5px; line-height: 1.3; }
 
-        /* Pulsanti Preset */
         .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
         .preset-btn { 
             background: #1a1a1a; border: 1px solid #333; color: #888; padding: 8px; 
@@ -55,10 +54,10 @@
             <label>Frequenza <span id="freqVal" class="value-display">4.0 Hz</span></label>
             <input type="range" id="freqSlider" min="0.5" max="40" value="4" step="0.5">
             <div class="preset-grid">
-                <button class="preset-btn" onclick="setFreq(2, 'DELTA: Sonno Profondo e Rigenerazione')">Delta (2Hz)</button>
-                <button class="preset-btn" onclick="setFreq(6, 'THETA: Meditazione e Sogni Lucidi')">Theta (6Hz)</button>
-                <button class="preset-btn" onclick="setFreq(10, 'ALPHA: Relax Vigile e Apprendimento')">Alpha (10Hz)</button>
-                <button class="preset-btn" onclick="setFreq(20, 'BETA: Focus, Logica e Attenzione')">Beta (20Hz)</button>
+                <button class="preset-btn" onclick="setFreq(2, 'DELTA: Sonno Profondo')">Delta (2Hz)</button>
+                <button class="preset-btn" onclick="setFreq(6, 'THETA: Meditazione')">Theta (6Hz)</button>
+                <button class="preset-btn" onclick="setFreq(10, 'ALPHA: Relax Vigile')">Alpha (10Hz)</button>
+                <button class="preset-btn" onclick="setFreq(20, 'BETA: Focus Alto')">Beta (20Hz)</button>
             </div>
             <span class="sub-label" id="freqDesc">Ottimale per il rilassamento e il sonno.</span>
         </div>
@@ -82,7 +81,7 @@
             <label>Timer Spegnimento <span id="timerVal" class="value-display">OFF</span></label>
             <input type="range" id="timerSlider" min="0" max="90" value="0" step="5">
             <div style="margin-top: 10px; font-size: 0.7em;">
-                <input type="checkbox" id="sweepCheck"> <label style="display:inline; text-transform: none; color: #aaa;">Abilita <b>Auto-Sweep</b> (Calo frequenza graduale)</label>
+                <input type="checkbox" id="sweepCheck"> <label style="display:inline; text-transform: none; color: #aaa;">Abilita <b>Auto-Sweep</b></label>
             </div>
             <span class="sub-label" id="timerStatus">Il volume sfumerà negli ultimi 30 secondi.</span>
         </div>
@@ -91,17 +90,18 @@
     <script>
         let audioCtx, oscLeft, oscRight, merger, mainGain, noiseGain, noiseNode, filterNode, analyzer;
         let isPlaying = false;
-        let timerInterval, sweepInterval;
+        let timerInterval;
         const BASE_FREQ = 200;
 
         const playBtn = document.getElementById('playBtn');
         const freqSlider = document.getElementById('freqSlider');
+        const canvas = document.getElementById('visualizer');
+        const canvasCtx = canvas.getContext('2d');
 
-        // Imposta Frequenza Preset
         function setFreq(val, desc) {
             freqSlider.value = val;
             updateFreqUI(val, desc);
-            if(isPlaying && oscRight) oscRight.frequency.setTargetAtTime(BASE_FREQ + val, audioCtx.currentTime, 0.5);
+            if(isPlaying && oscRight) oscRight.frequency.setTargetAtTime(BASE_FREQ + val, audioCtx.currentTime, 0.2);
         }
 
         function updateFreqUI(val, desc) {
@@ -116,7 +116,6 @@
             if(isPlaying && oscRight) oscRight.frequency.setTargetAtTime(BASE_FREQ + val, audioCtx.currentTime, 0.2);
         });
 
-        // Altri listener UI
         document.getElementById('volToneSlider').addEventListener('input', (e) => {
             document.getElementById('volToneVal').textContent = Math.round(e.target.value * 100) + "%";
             if(mainGain) mainGain.gain.setTargetAtTime(e.target.value, audioCtx.currentTime, 0.1);
@@ -138,13 +137,17 @@
         });
 
         function initAudio() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
             analyzer = audioCtx.createAnalyser();
             analyzer.fftSize = 256;
 
             merger = audioCtx.createChannelMerger(2);
             mainGain = audioCtx.createGain();
             mainGain.gain.value = document.getElementById('volToneSlider').value;
+            
             merger.connect(mainGain);
             mainGain.connect(analyzer);
             mainGain.connect(audioCtx.destination);
@@ -166,17 +169,17 @@
             noiseNode = audioCtx.createBufferSource();
             noiseNode.buffer = buffer;
             noiseNode.loop = true;
+            
             filterNode = audioCtx.createBiquadFilter();
             filterNode.type = 'lowpass';
             filterNode.frequency.value = document.getElementById('filterSlider').value;
+            
             noiseGain = audioCtx.createGain();
             noiseGain.gain.value = document.getElementById('volNoiseSlider').value;
 
             noiseNode.connect(filterNode);
             filterNode.connect(noiseGain);
             noiseGain.connect(audioCtx.destination);
-            
-            drawVisualizer();
         }
 
         function startOscillators() {
@@ -184,16 +187,26 @@
             oscLeft = audioCtx.createOscillator();
             oscRight = audioCtx.createOscillator();
             oscLeft.type = oscRight.type = 'sine';
-            oscLeft.frequency.value = BASE_FREQ;
-            oscRight.frequency.value = BASE_FREQ + beatFreq;
+            oscLeft.frequency.setValueAtTime(BASE_FREQ, audioCtx.currentTime);
+            oscRight.frequency.setValueAtTime(BASE_FREQ + beatFreq, audioCtx.currentTime);
 
             oscLeft.connect(merger, 0, 0);
             oscRight.connect(merger, 0, 1);
+            
             oscLeft.start();
             oscRight.start();
             noiseNode.start();
             
+            drawVisualizer();
             handleTimerAndSweep();
+        }
+
+        function stopAudio() {
+            if (oscLeft) { oscLeft.stop(); oscLeft.disconnect(); }
+            if (oscRight) { oscRight.stop(); oscRight.disconnect(); }
+            if (noiseNode) { noiseNode.stop(); noiseNode.disconnect(); }
+            if (timerInterval) clearInterval(timerInterval);
+            isPlaying = false;
         }
 
         function handleTimerAndSweep() {
@@ -208,17 +221,16 @@
             timerInterval = setInterval(() => {
                 currentSec++;
                 let remaining = totalSeconds - currentSec;
-                document.getElementById('timerStatus').textContent = `Attivo: ${Math.ceil(remaining/60)} min rimasti`;
+                document.getElementById('timerStatus').textContent = `${Math.ceil(remaining/60)} min rimasti`;
 
-                // Funzione Auto-Sweep: abbassa la frequenza verso 1.0Hz
                 if (useSweep && startFreq > 1.0) {
                     let newFreq = startFreq - ((startFreq - 1.0) * (currentSec / totalSeconds));
                     freqSlider.value = newFreq;
-                    updateFreqUI(newFreq.toFixed(1), "AUTO-SWEEP: Calo graduale frequenza...");
+                    updateFreqUI(newFreq.toFixed(1), "AUTO-SWEEP attivo...");
                     oscRight.frequency.setTargetAtTime(BASE_FREQ + newFreq, audioCtx.currentTime, 1);
                 }
 
-                if (remaining <= 30) { // Fade out finale
+                if (remaining <= 30) {
                     mainGain.gain.setTargetAtTime(0, audioCtx.currentTime, 10);
                     noiseGain.gain.setTargetAtTime(0, audioCtx.currentTime, 10);
                 }
@@ -249,31 +261,30 @@
             }
             canvasCtx.stroke();
         }
-        const canvas = document.getElementById('visualizer');
-        const canvasCtx = canvas.getContext('2d');
 
-        function togglePlay() {
+        async function togglePlay() {
             if (!audioCtx) initAudio();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            if (audioCtx.state === 'suspended') {
+                await audioCtx.resume();
+            }
 
             if (!isPlaying) {
+                // Ricreiamo i nodi audio ogni volta che partiamo
+                initAudio(); 
                 startOscillators();
                 playBtn.textContent = "II";
                 playBtn.classList.add("active");
                 isPlaying = true;
-                drawVisualizer();
             } else {
-                if(oscLeft) oscLeft.stop();
-                if(oscRight) oscRight.stop();
-                if(noiseNode) noiseNode.stop();
-                clearInterval(timerInterval);
-                document.getElementById('timerStatus').textContent = "Trascina per impostare i minuti";
+                stopAudio();
                 playBtn.textContent = "▶";
                 playBtn.classList.remove("active");
-                isPlaying = false;
-                initAudio();
+                document.getElementById('timerStatus').textContent = "Il volume sfumerà negli ultimi 30 secondi.";
             }
         }
+        
+        playBtn.addEventListener('click', togglePlay);
     </script>
 </body>
 </html>
