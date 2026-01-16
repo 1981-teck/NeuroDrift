@@ -3,43 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeuroDrift Pro</title>
+    <title>NeuroDrift Pro - Binaural Sync</title>
     <style>
+        :root { --accent: #4caf50; --bg: #1a1a1a; --container: #2c2c2c; --text-dim: #888; }
         body {
-            background-color: #1a1a1a; color: #e0e0e0;
-            font-family: -apple-system, sans-serif;
+            background-color: var(--bg); color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             min-height: 100vh; margin: 0; padding: 20px;
         }
         .container {
-            width: 100%; max-width: 380px; background: #2c2c2c; padding: 25px;
-            border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 100%; max-width: 380px; background: var(--container); padding: 25px;
+            border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
         }
-        .header { display: flex; justify-content: space-between; margin-bottom: 20px; color: #888; font-size: 0.9em; }
-        .timer-badge { border: 1px solid #4caf50; color: #4caf50; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 25px; color: var(--text-dim); font-size: 0.9em; }
+        .timer-badge { border: 1px solid var(--accent); color: var(--accent); padding: 2px 10px; border-radius: 12px; font-size: 0.75em; font-weight: bold; }
         
-        .control-group { margin-bottom: 25px; position: relative; }
-        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        label { font-size: 1em; font-weight: 500; color: #fff; }
-        .value-text { color: #aaa; font-size: 1.1em; }
-        .sub-label { display: block; color: #666; font-size: 0.8em; margin-top: -5px; margin-bottom: 10px; }
+        canvas { width: 100%; height: 50px; background: #222; border-radius: 8px; margin-bottom: 20px; border: 1px solid #3d3d3d; }
 
-        input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; background: #444; border-radius: 2px; outline: none; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; background: #fff; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        .control-group { margin-bottom: 25px; }
+        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        label { font-size: 1.05em; font-weight: 500; color: #fff; }
+        .value-text { color: #fff; font-size: 1.1em; font-weight: 300; }
+        .sub-label { display: block; color: var(--text-dim); font-size: 0.85em; margin-top: -2px; margin-bottom: 12px; }
 
-        .switch-row { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; }
-        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        input[type=range] { -webkit-appearance: none; width: 100%; height: 3px; background: #444; outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; background: #fff; border-radius: 50%; cursor: pointer; }
+
+        .switch-row { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #3d3d3d; }
+        .switch { position: relative; display: inline-block; width: 46px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider-switch { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 34px; }
-        .slider-switch:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider-switch { background-color: #4caf50; }
-        input:checked + .slider-switch:before { transform: translateX(24px); }
+        .slider-switch { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .3s; border-radius: 34px; }
+        .slider-switch:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider-switch { background-color: var(--accent); }
+        input:checked + .slider-switch:before { transform: translateX(22px); }
 
         #startBtn {
-            background: transparent; border: none; color: #888;
-            font-size: 1.8em; cursor: pointer; width: 100%; margin-top: 20px; transition: 0.3s;
+            background: transparent; border: none; color: var(--text-dim);
+            font-size: 1.8em; cursor: pointer; width: 100%; margin-top: 25px; transition: 0.2s;
         }
-        #startBtn.active { color: #fff; }
+        #startBtn.active { color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
     </style>
 </head>
 <body>
@@ -47,9 +50,11 @@
     <div class="container">
         <div class="header">
             <span>Help</span>
-            <span class="timer-badge">TIMER</span>
+            <span class="timer-badge" id="timerDisplay">TIMER OFF</span>
             <span>Defaults</span>
         </div>
+
+        <canvas id="visualizer"></canvas>
 
         <div class="control-group">
             <div class="label-row">
@@ -65,7 +70,7 @@
                 <label>Tone</label>
                 <span id="toneVal" class="value-text">214 Hz</span>
             </div>
-            <input type="range" id="toneSlider" min="100" max="1000" value="214" step="1">
+            <input type="range" id="toneSlider" min="100" max="600" value="214" step="1">
         </div>
 
         <div class="control-group">
@@ -78,10 +83,21 @@
 
         <div class="control-group">
             <div class="label-row">
-                <label>Noise</label>
+                <label>Noise (Pink)</label>
                 <span id="noiseVal" class="value-text">None</span>
             </div>
             <input type="range" id="noiseSlider" min="0" max="1" value="0" step="0.01">
+        </div>
+
+        <div class="control-group">
+            <div class="label-row">
+                <label>Timer</label>
+                <span id="timerVal" class="value-text">OFF</span>
+            </div>
+            <input type="range" id="timerSlider" min="0" max="120" value="0" step="5">
+            <div style="margin-top: 10px; font-size: 0.75em; color: #888;">
+                <input type="checkbox" id="sweepCheck"> <label style="text-transform:none; color:#888;">Enable Auto-Sweep (Down to 1Hz)</label>
+            </div>
         </div>
 
         <div class="switch-row">
@@ -96,27 +112,31 @@
     </div>
 
     <script>
-        let audioCtx, oscLeft, oscRight, mainGain, noiseNode, noiseGain, merger;
+        let audioCtx, oscLeft, oscRight, mainGain, noiseNode, noiseGain, merger, analyzer;
         let isPlaying = false;
+        let timerInterval;
 
         const startBtn = document.getElementById('startBtn');
         const freqSlider = document.getElementById('freqSlider');
         const toneSlider = document.getElementById('toneSlider');
         const volSlider = document.getElementById('volSlider');
         const noiseSlider = document.getElementById('noiseSlider');
+        const timerSlider = document.getElementById('timerSlider');
         const modeSwitch = document.getElementById('modeSwitch');
+        const canvas = document.getElementById('visualizer');
+        const canvasCtx = canvas.getContext('2d');
 
-        // Aggiornamenti UI
+        // Aggiornamenti UI dinamici
         freqSlider.addEventListener('input', (e) => {
             const val = e.target.value;
             document.getElementById('freqVal').textContent = val + " Hz";
             document.getElementById('freqType').textContent = val < 4 ? "For Deep Sleep" : val < 8 ? "For Meditation" : "For Focus";
-            updateNodes();
+            updateFrequencies();
         });
 
         toneSlider.addEventListener('input', (e) => {
             document.getElementById('toneVal').textContent = e.target.value + " Hz";
-            updateNodes();
+            updateFrequencies();
         });
 
         volSlider.addEventListener('input', (e) => {
@@ -130,12 +150,17 @@
             if(noiseGain) noiseGain.gain.setTargetAtTime(val, audioCtx.currentTime, 0.1);
         });
 
-        modeSwitch.addEventListener('change', updateNodes);
+        timerSlider.addEventListener('input', (e) => {
+            document.getElementById('timerVal').textContent = e.target.value == 0 ? "OFF" : e.target.value + " min";
+        });
 
         function initAudio() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             
-            // Setup Noise (Pink Noise)
+            analyzer = audioCtx.createAnalyser();
+            analyzer.fftSize = 256;
+
+            // Pink Noise Setup
             const bufferSize = audioCtx.sampleRate * 2;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
@@ -160,62 +185,95 @@
             mainGain = audioCtx.createGain();
             mainGain.gain.value = volSlider.value;
             merger.connect(mainGain);
+            mainGain.connect(analyzer);
             mainGain.connect(audioCtx.destination);
         }
 
-        function updateNodes() {
+        function updateFrequencies() {
             if (!isPlaying) return;
-            const baseTone = parseFloat(toneSlider.value);
+            const base = parseFloat(toneSlider.value);
             const beat = parseFloat(freqSlider.value);
-            const isBinaural = modeSwitch.checked;
+            oscLeft.frequency.setTargetAtTime(base, audioCtx.currentTime, 0.1);
+            oscRight.frequency.setTargetAtTime(modeSwitch.checked ? base + beat : base, audioCtx.currentTime, 0.1);
+        }
 
-            oscLeft.frequency.setTargetAtTime(baseTone, audioCtx.currentTime, 0.1);
+        function startTimer() {
+            const mins = parseInt(timerSlider.value);
+            if (mins <= 0) return;
             
-            if (isBinaural) {
-                // Binaurale: frequenze diverse nei due canali
-                oscRight.frequency.setTargetAtTime(baseTone + beat, audioCtx.currentTime, 0.1);
-            } else {
-                // Monaurale: stessa frequenza (battito creato fisicamente)
-                oscRight.frequency.setTargetAtTime(baseTone, audioCtx.currentTime, 0.1);
+            let totalSecs = mins * 60;
+            let currentSec = 0;
+            const startFreq = parseFloat(freqSlider.value);
+
+            timerInterval = setInterval(() => {
+                currentSec++;
+                let remaining = totalSecs - currentSec;
+                document.getElementById('timerDisplay').textContent = Math.ceil(remaining/60) + " MIN LEFT";
+
+                // Auto-Sweep Logic
+                if (document.getElementById('sweepCheck').checked && startFreq > 1) {
+                    let nextFreq = startFreq - ((startFreq - 1) * (currentSec / totalSecs));
+                    freqSlider.value = nextFreq;
+                    document.getElementById('freqVal').textContent = nextFreq.toFixed(1) + " Hz";
+                    updateFrequencies();
+                }
+
+                // Fade-out ultimi 15 secondi
+                if (remaining <= 15) {
+                    mainGain.gain.setTargetAtTime(0, audioCtx.currentTime, 5);
+                    noiseGain.gain.setTargetAtTime(0, audioCtx.currentTime, 5);
+                }
+
+                if (remaining <= 0) togglePlay();
+            }, 1000);
+        }
+
+        function draw() {
+            if(!isPlaying) return;
+            requestAnimationFrame(draw);
+            const data = new Uint8Array(analyzer.frequencyBinCount);
+            analyzer.getByteTimeDomainData(data);
+            canvasCtx.fillStyle = '#222';
+            canvasCtx.fillRect(0,0,canvas.width, canvas.height);
+            canvasCtx.strokeStyle = '#4caf50';
+            canvasCtx.beginPath();
+            let x = 0;
+            for(let i=0; i<data.length; i++) {
+                let v = data[i]/128.0; let y = v * canvas.height/2;
+                if(i===0) canvasCtx.moveTo(x,y); else canvasCtx.lineTo(x,y);
+                x += canvas.width/data.length;
             }
+            canvasCtx.stroke();
         }
 
-        function start() {
-            initAudio();
-            oscLeft = audioCtx.createOscillator();
-            oscRight = audioCtx.createOscillator();
-            oscLeft.type = oscRight.type = 'sine';
+        async function togglePlay() {
+            if (!audioCtx || audioCtx.state === 'closed') initAudio();
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
 
-            oscLeft.connect(merger, 0, 0);
-            oscRight.connect(merger, 0, 1);
-
-            updateNodes();
-            oscLeft.start();
-            oscRight.start();
-            noiseNode.start();
-        }
-
-        function stop() {
-            if(oscLeft) oscLeft.stop();
-            if(oscRight) oscRight.stop();
-            if(noiseNode) noiseNode.stop();
-            if(audioCtx) audioCtx.close();
-            audioCtx = null;
-        }
-
-        startBtn.addEventListener('click', () => {
             if (!isPlaying) {
-                start();
+                initAudio();
+                oscLeft = audioCtx.createOscillator();
+                oscRight = audioCtx.createOscillator();
+                oscLeft.connect(merger, 0, 0);
+                oscRight.connect(merger, 0, 1);
+                updateFrequencies();
+                oscLeft.start(); oscRight.start(); noiseNode.start();
+                startTimer();
+                isPlaying = true;
                 startBtn.textContent = "Stop";
                 startBtn.classList.add("active");
-                isPlaying = true;
+                draw();
             } else {
-                stop();
+                if(oscLeft) oscLeft.stop(); if(oscRight) oscRight.stop(); if(noiseNode) noiseNode.stop();
+                if(timerInterval) clearInterval(timerInterval);
+                document.getElementById('timerDisplay').textContent = "TIMER OFF";
+                isPlaying = false;
                 startBtn.textContent = "Start";
                 startBtn.classList.remove("active");
-                isPlaying = false;
             }
-        });
+        }
+
+        startBtn.addEventListener('click', togglePlay);
     </script>
 </body>
 </html>
