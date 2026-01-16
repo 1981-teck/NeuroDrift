@@ -3,156 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeuroDrift: Advanced Binaural Sync</title>
+    <title>NeuroDrift Pro</title>
     <style>
         body {
-            background-color: #000000; color: #e0e0e0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #1a1a1a; color: #e0e0e0;
+            font-family: -apple-system, sans-serif;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: 100vh; margin: 0; text-align: center; padding: 20px;
+            min-height: 100vh; margin: 0; padding: 20px;
         }
         .container {
-            width: 100%; max-width: 420px; background: #111; padding: 25px;
-            border-radius: 24px; box-shadow: 0 0 30px rgba(255,255,255,0.05);
+            width: 100%; max-width: 380px; background: #2c2c2c; padding: 25px;
+            border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        h1 { font-weight: 200; letter-spacing: 6px; margin-bottom: 20px; font-size: 1.5em; color: #fff; }
-        canvas { width: 100%; height: 60px; background: #080808; border-radius: 12px; margin-bottom: 20px; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 20px; color: #888; font-size: 0.9em; }
+        .timer-badge { border: 1px solid #4caf50; color: #4caf50; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; }
         
-        .control-group { margin-bottom: 22px; text-align: left; }
-        label { display: block; margin-bottom: 8px; font-size: 0.7em; text-transform: uppercase; letter-spacing: 1px; color: #777; }
-        
-        .value-display { float: right; font-size: 0.85em; color: #fff; font-weight: bold; }
-        .sub-label { font-size: 0.65em; color: #555; display: block; margin-top: 5px; line-height: 1.3; }
+        .control-group { margin-bottom: 25px; position: relative; }
+        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        label { font-size: 1em; font-weight: 500; color: #fff; }
+        .value-text { color: #aaa; font-size: 1.1em; }
+        .sub-label { display: block; color: #666; font-size: 0.8em; margin-top: -5px; margin-bottom: 10px; }
 
-        .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .preset-btn { 
-            background: #1a1a1a; border: 1px solid #333; color: #888; padding: 8px; 
-            font-size: 0.7em; border-radius: 8px; cursor: pointer; transition: 0.2s;
+        input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; background: #444; border-radius: 2px; outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; background: #fff; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+
+        .switch-row { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider-switch { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 34px; }
+        .slider-switch:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider-switch { background-color: #4caf50; }
+        input:checked + .slider-switch:before { transform: translateX(24px); }
+
+        #startBtn {
+            background: transparent; border: none; color: #888;
+            font-size: 1.8em; cursor: pointer; width: 100%; margin-top: 20px; transition: 0.3s;
         }
-        .preset-btn:hover { background: #222; color: #fff; border-color: #555; }
-        .preset-btn.active { background: #fff; color: #000; border-color: #fff; }
-
-        #playBtn {
-            background: transparent; border: 2px solid #fff; color: #fff;
-            width: 65px; height: 65px; font-size: 22px; border-radius: 50%;
-            cursor: pointer; transition: 0.3s; margin-bottom: 20px;
-        }
-        #playBtn.active { background: #fff; color: #000; box-shadow: 0 0 20px rgba(255,255,255,0.4); }
-
-        input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; background: #fff; border-radius: 50%; cursor: pointer; }
+        #startBtn.active { color: #fff; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>BINAURAL SYNC</h1>
-        <canvas id="visualizer"></canvas>
-        <button id="playBtn">▶</button>
+        <div class="header">
+            <span>Help</span>
+            <span class="timer-badge">TIMER</span>
+            <span>Defaults</span>
+        </div>
 
         <div class="control-group">
-            <label>Frequenza <span id="freqVal" class="value-display">4.0 Hz</span></label>
-            <input type="range" id="freqSlider" min="0.5" max="40" value="4" step="0.5">
-            <div class="preset-grid">
-                <button class="preset-btn" onclick="setFreq(2, 'DELTA: Sonno Profondo')">Delta (2Hz)</button>
-                <button class="preset-btn" onclick="setFreq(6, 'THETA: Meditazione')">Theta (6Hz)</button>
-                <button class="preset-btn" onclick="setFreq(10, 'ALPHA: Relax Vigile')">Alpha (10Hz)</button>
-                <button class="preset-btn" onclick="setFreq(20, 'BETA: Focus Alto')">Beta (20Hz)</button>
+            <div class="label-row">
+                <label>Frequency</label>
+                <span id="freqVal" class="value-text">1 Hz</span>
             </div>
-            <span class="sub-label" id="freqDesc">Ottimale per il rilassamento e il sonno.</span>
+            <span class="sub-label" id="freqType">For Deep Sleep</span>
+            <input type="range" id="freqSlider" min="0.5" max="40" value="1" step="0.5">
         </div>
 
         <div class="control-group">
-            <label>Volume Onde <span id="volToneVal" class="value-display">70%</span></label>
-            <input type="range" id="volToneSlider" min="0" max="1" value="0.7" step="0.01">
-        </div>
-
-        <div class="control-group">
-            <label>Tonalità Rumore <span id="filterVal" class="value-display">Morbido</span></label>
-            <input type="range" id="filterSlider" min="200" max="4000" value="1000" step="10">
-        </div>
-
-        <div class="control-group">
-            <label>Volume Rumore <span id="volNoiseVal" class="value-display">30%</span></label>
-            <input type="range" id="volNoiseSlider" min="0" max="1" value="0.3" step="0.01">
-        </div>
-
-        <div class="control-group">
-            <label>Timer Spegnimento <span id="timerVal" class="value-display">OFF</span></label>
-            <input type="range" id="timerSlider" min="0" max="90" value="0" step="5">
-            <div style="margin-top: 10px; font-size: 0.7em;">
-                <input type="checkbox" id="sweepCheck"> <label style="display:inline; text-transform: none; color: #aaa;">Abilita <b>Auto-Sweep</b></label>
+            <div class="label-row">
+                <label>Tone</label>
+                <span id="toneVal" class="value-text">214 Hz</span>
             </div>
-            <span class="sub-label" id="timerStatus">Il volume sfumerà negli ultimi 30 secondi.</span>
+            <input type="range" id="toneSlider" min="100" max="1000" value="214" step="1">
         </div>
+
+        <div class="control-group">
+            <div class="label-row">
+                <label>Volume</label>
+                <span id="volVal" class="value-text">33%</span>
+            </div>
+            <input type="range" id="volSlider" min="0" max="1" value="0.33" step="0.01">
+        </div>
+
+        <div class="control-group">
+            <div class="label-row">
+                <label>Noise</label>
+                <span id="noiseVal" class="value-text">None</span>
+            </div>
+            <input type="range" id="noiseSlider" min="0" max="1" value="0" step="0.01">
+        </div>
+
+        <div class="switch-row">
+            <label>Monaural / Binaural</label>
+            <label class="switch">
+                <input type="checkbox" id="modeSwitch" checked>
+                <span class="slider-switch"></span>
+            </label>
+        </div>
+
+        <button id="startBtn">Start</button>
     </div>
 
     <script>
-        let audioCtx, oscLeft, oscRight, merger, mainGain, noiseGain, noiseNode, filterNode, analyzer;
+        let audioCtx, oscLeft, oscRight, mainGain, noiseNode, noiseGain, merger;
         let isPlaying = false;
-        let timerInterval;
-        const BASE_FREQ = 200;
 
-        const playBtn = document.getElementById('playBtn');
+        const startBtn = document.getElementById('startBtn');
         const freqSlider = document.getElementById('freqSlider');
-        const canvas = document.getElementById('visualizer');
-        const canvasCtx = canvas.getContext('2d');
+        const toneSlider = document.getElementById('toneSlider');
+        const volSlider = document.getElementById('volSlider');
+        const noiseSlider = document.getElementById('noiseSlider');
+        const modeSwitch = document.getElementById('modeSwitch');
 
-        function setFreq(val, desc) {
-            freqSlider.value = val;
-            updateFreqUI(val, desc);
-            if(isPlaying && oscRight) oscRight.frequency.setTargetAtTime(BASE_FREQ + val, audioCtx.currentTime, 0.2);
-        }
-
-        function updateFreqUI(val, desc) {
-            document.getElementById('freqVal').textContent = val + " Hz";
-            if(desc) document.getElementById('freqDesc').textContent = desc;
-        }
-
+        // Aggiornamenti UI
         freqSlider.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            let d = val < 4 ? "DELTA: Sonno Profondo" : val < 8 ? "THETA: Meditazione" : val < 13 ? "ALPHA: Relax" : val < 30 ? "BETA: Focus" : "GAMMA: Intuizione";
-            updateFreqUI(val, d);
-            if(isPlaying && oscRight) oscRight.frequency.setTargetAtTime(BASE_FREQ + val, audioCtx.currentTime, 0.2);
+            const val = e.target.value;
+            document.getElementById('freqVal').textContent = val + " Hz";
+            document.getElementById('freqType').textContent = val < 4 ? "For Deep Sleep" : val < 8 ? "For Meditation" : "For Focus";
+            updateNodes();
         });
 
-        document.getElementById('volToneSlider').addEventListener('input', (e) => {
-            document.getElementById('volToneVal').textContent = Math.round(e.target.value * 100) + "%";
+        toneSlider.addEventListener('input', (e) => {
+            document.getElementById('toneVal').textContent = e.target.value + " Hz";
+            updateNodes();
+        });
+
+        volSlider.addEventListener('input', (e) => {
+            document.getElementById('volVal').textContent = Math.round(e.target.value * 100) + "%";
             if(mainGain) mainGain.gain.setTargetAtTime(e.target.value, audioCtx.currentTime, 0.1);
         });
 
-        document.getElementById('filterSlider').addEventListener('input', (e) => {
-            const val = e.target.value;
-            document.getElementById('filterVal').textContent = val < 800 ? "Cupo" : (val > 2500 ? "Brillante" : "Morbido");
-            if(filterNode) filterNode.frequency.setTargetAtTime(val, audioCtx.currentTime, 0.1);
+        noiseSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById('noiseVal').textContent = val === 0 ? "None" : Math.round(val * 100) + "%";
+            if(noiseGain) noiseGain.gain.setTargetAtTime(val, audioCtx.currentTime, 0.1);
         });
 
-        document.getElementById('volNoiseSlider').addEventListener('input', (e) => {
-            document.getElementById('volNoiseVal').textContent = Math.round(e.target.value * 100) + "%";
-            if(noiseGain) noiseGain.gain.setTargetAtTime(e.target.value, audioCtx.currentTime, 0.1);
-        });
-
-        document.getElementById('timerSlider').addEventListener('input', (e) => {
-            document.getElementById('timerVal').textContent = e.target.value > 0 ? e.target.value + " min" : "OFF";
-        });
+        modeSwitch.addEventListener('change', updateNodes);
 
         function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             
-            analyzer = audioCtx.createAnalyser();
-            analyzer.fftSize = 256;
-
-            merger = audioCtx.createChannelMerger(2);
-            mainGain = audioCtx.createGain();
-            mainGain.gain.value = document.getElementById('volToneSlider').value;
-            
-            merger.connect(mainGain);
-            mainGain.connect(analyzer);
-            mainGain.connect(audioCtx.destination);
-
-            // Generazione Pink Noise
+            // Setup Noise (Pink Noise)
             const bufferSize = audioCtx.sampleRate * 2;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
@@ -165,126 +148,74 @@
                 data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
                 b6 = white * 0.115926;
             }
-
             noiseNode = audioCtx.createBufferSource();
             noiseNode.buffer = buffer;
             noiseNode.loop = true;
-            
-            filterNode = audioCtx.createBiquadFilter();
-            filterNode.type = 'lowpass';
-            filterNode.frequency.value = document.getElementById('filterSlider').value;
-            
             noiseGain = audioCtx.createGain();
-            noiseGain.gain.value = document.getElementById('volNoiseSlider').value;
-
-            noiseNode.connect(filterNode);
-            filterNode.connect(noiseGain);
+            noiseGain.gain.value = noiseSlider.value;
+            noiseNode.connect(noiseGain);
             noiseGain.connect(audioCtx.destination);
+
+            merger = audioCtx.createChannelMerger(2);
+            mainGain = audioCtx.createGain();
+            mainGain.gain.value = volSlider.value;
+            merger.connect(mainGain);
+            mainGain.connect(audioCtx.destination);
         }
 
-        function startOscillators() {
-            const beatFreq = parseFloat(freqSlider.value);
+        function updateNodes() {
+            if (!isPlaying) return;
+            const baseTone = parseFloat(toneSlider.value);
+            const beat = parseFloat(freqSlider.value);
+            const isBinaural = modeSwitch.checked;
+
+            oscLeft.frequency.setTargetAtTime(baseTone, audioCtx.currentTime, 0.1);
+            
+            if (isBinaural) {
+                // Binaurale: frequenze diverse nei due canali
+                oscRight.frequency.setTargetAtTime(baseTone + beat, audioCtx.currentTime, 0.1);
+            } else {
+                // Monaurale: stessa frequenza (battito creato fisicamente)
+                oscRight.frequency.setTargetAtTime(baseTone, audioCtx.currentTime, 0.1);
+            }
+        }
+
+        function start() {
+            initAudio();
             oscLeft = audioCtx.createOscillator();
             oscRight = audioCtx.createOscillator();
             oscLeft.type = oscRight.type = 'sine';
-            oscLeft.frequency.setValueAtTime(BASE_FREQ, audioCtx.currentTime);
-            oscRight.frequency.setValueAtTime(BASE_FREQ + beatFreq, audioCtx.currentTime);
 
             oscLeft.connect(merger, 0, 0);
             oscRight.connect(merger, 0, 1);
-            
+
+            updateNodes();
             oscLeft.start();
             oscRight.start();
             noiseNode.start();
-            
-            drawVisualizer();
-            handleTimerAndSweep();
         }
 
-        function stopAudio() {
-            if (oscLeft) { oscLeft.stop(); oscLeft.disconnect(); }
-            if (oscRight) { oscRight.stop(); oscRight.disconnect(); }
-            if (noiseNode) { noiseNode.stop(); noiseNode.disconnect(); }
-            if (timerInterval) clearInterval(timerInterval);
-            isPlaying = false;
+        function stop() {
+            if(oscLeft) oscLeft.stop();
+            if(oscRight) oscRight.stop();
+            if(noiseNode) noiseNode.stop();
+            if(audioCtx) audioCtx.close();
+            audioCtx = null;
         }
 
-        function handleTimerAndSweep() {
-            const minutes = parseInt(document.getElementById('timerSlider').value);
-            const useSweep = document.getElementById('sweepCheck').checked;
-            if (minutes <= 0) return;
-
-            let totalSeconds = minutes * 60;
-            let currentSec = 0;
-            const startFreq = parseFloat(freqSlider.value);
-
-            timerInterval = setInterval(() => {
-                currentSec++;
-                let remaining = totalSeconds - currentSec;
-                document.getElementById('timerStatus').textContent = `${Math.ceil(remaining/60)} min rimasti`;
-
-                if (useSweep && startFreq > 1.0) {
-                    let newFreq = startFreq - ((startFreq - 1.0) * (currentSec / totalSeconds));
-                    freqSlider.value = newFreq;
-                    updateFreqUI(newFreq.toFixed(1), "AUTO-SWEEP attivo...");
-                    oscRight.frequency.setTargetAtTime(BASE_FREQ + newFreq, audioCtx.currentTime, 1);
-                }
-
-                if (remaining <= 30) {
-                    mainGain.gain.setTargetAtTime(0, audioCtx.currentTime, 10);
-                    noiseGain.gain.setTargetAtTime(0, audioCtx.currentTime, 10);
-                }
-
-                if (remaining <= 0) togglePlay();
-            }, 1000);
-        }
-
-        function drawVisualizer() {
-            if(!isPlaying) return;
-            requestAnimationFrame(drawVisualizer);
-            const bufferLength = analyzer.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            analyzer.getByteTimeDomainData(dataArray);
-
-            canvasCtx.fillStyle = '#080808';
-            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-            canvasCtx.lineWidth = 2;
-            canvasCtx.strokeStyle = '#ffffff';
-            canvasCtx.beginPath();
-            let sliceWidth = canvas.width / bufferLength;
-            let x = 0;
-            for (let i = 0; i < bufferLength; i++) {
-                let v = dataArray[i] / 128.0;
-                let y = v * canvas.height / 2;
-                if (i === 0) canvasCtx.moveTo(x, y); else canvasCtx.lineTo(x, y);
-                x += sliceWidth;
-            }
-            canvasCtx.stroke();
-        }
-
-        async function togglePlay() {
-            if (!audioCtx) initAudio();
-            
-            if (audioCtx.state === 'suspended') {
-                await audioCtx.resume();
-            }
-
+        startBtn.addEventListener('click', () => {
             if (!isPlaying) {
-                // Ricreiamo i nodi audio ogni volta che partiamo
-                initAudio(); 
-                startOscillators();
-                playBtn.textContent = "II";
-                playBtn.classList.add("active");
+                start();
+                startBtn.textContent = "Stop";
+                startBtn.classList.add("active");
                 isPlaying = true;
             } else {
-                stopAudio();
-                playBtn.textContent = "▶";
-                playBtn.classList.remove("active");
-                document.getElementById('timerStatus').textContent = "Il volume sfumerà negli ultimi 30 secondi.";
+                stop();
+                startBtn.textContent = "Start";
+                startBtn.classList.remove("active");
+                isPlaying = false;
             }
-        }
-        
-        playBtn.addEventListener('click', togglePlay);
+        });
     </script>
 </body>
 </html>
