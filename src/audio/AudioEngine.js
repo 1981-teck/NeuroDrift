@@ -26,7 +26,7 @@ export class AudioEngine {
     this._beatHz = 6.0;
     this._binaural = true;
 
-    // Keep headroom to avoid clipping. Removing the compressor avoids pumping/click artifacts.
+    // Keep headroom to avoid clipping.
     this._baseToneLevel = 0.35;
 
     // User-controlled tone (carrier/binaural) volume
@@ -38,6 +38,13 @@ export class AudioEngine {
 
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     this.ctx = new AudioContext();
+
+    // Best-effort: request stereo at the destination when supported.
+    try {
+      this.ctx.destination.channelCount = 2;
+      this.ctx.destination.channelCountMode = 'explicit';
+      this.ctx.destination.channelInterpretation = 'speakers';
+    } catch (_) {}
 
     // Load noise worklet
     await this.ctx.audioWorklet.addModule(
@@ -51,13 +58,12 @@ export class AudioEngine {
     this.mainGain = this.ctx.createGain();
     this.mainGain.gain.value = 0.33;
 
-    // Mix bus (tone + noise) -> analyser -> master -> destination
+    // Mix bus (tone + noise) -> master -> destination
     this.mixBus = this.ctx.createGain();
     this.mixBus.gain.value = 1.0;
 
     // Keep pipeline explicitly stereo to reduce unintended downmix/crosstalk effects
-    // (some environments do unexpected channel policy changes that can accentuate low-beat "ticks").
-    for (const n of [this.mixBus, this.analyser, this.mainGain]) {
+    for (const n of [this.mixBus, this.mainGain, this.toneGain, this.noiseGain].filter(Boolean)) {
       try {
         n.channelCount = 2;
         n.channelCountMode = 'explicit';
@@ -65,9 +71,11 @@ export class AudioEngine {
       } catch (_) {}
     }
 
-    this.mixBus.connect(this.analyser);
-    this.analyser.connect(this.mainGain);
+    // IMPORTANT: analyser is a TAP (parallel), not in the audio path.
+    // This matches the v1 wiring and avoids any browser-specific channel policy surprises.
+    this.mixBus.connect(this.mainGain);
     this.mainGain.connect(this.ctx.destination);
+    this.mainGain.connect(this.analyser);
 
     this.toneGain = this.ctx.createGain();
     this.toneGain.gain.value = this._getTargetToneGain();
@@ -248,6 +256,8 @@ export class AudioEngine {
       this.toneGain.gain.setTargetAtTime(this._getTargetToneGain(), now, 0.1);
     }
     this._applyRouting(false);
+    // When binaural is off, we force both oscillators to the same carrier frequency (no beat).
+    this._applyFrequencies(0.15);
   }
 
   rampBeatTo(targetHz, durationSeconds) {
@@ -262,8 +272,12 @@ export class AudioEngine {
     const now = this.ctx.currentTime;
     const carrier = this._carrierTone;
 
-    // Symmetric binaural pair around carrier
-    const half = target * 0.5;
+    // If binaural is off, keep both oscillators on carrier (no beat).
+    const effectiveBeat = this._binaural ? target : 0;
+
+    // Symmetric binaural pair around carrier:
+    // L = carrier - beat/2, R = carrier + beat/2
+    const half = effectiveBeat * 0.5;
     const leftTarget = Math.max(0.1, carrier - half);
     const rightTarget = Math.max(0.1, carrier + half);
 
@@ -292,6 +306,7 @@ export class AudioEngine {
         this.oscLeft.connect(this.merger, 0, 0);
         this.oscRight.connect(this.merger, 0, 1);
       } else {
+        // monaural: both oscillators feed the same bus (they will be set to the same carrier frequency)
         this.oscLeft.connect(this.toneGain);
         this.oscRight.connect(this.toneGain);
       }
@@ -307,9 +322,12 @@ export class AudioEngine {
       const carrier = this._carrierTone;
       const beat = this._beatHz;
 
+      // If binaural is off, keep both oscillators on carrier (no beat).
+      const effectiveBeat = this._binaural ? beat : 0;
+
       // Symmetric binaural pair around carrier:
       // L = carrier - beat/2, R = carrier + beat/2
-      const half = beat * 0.5;
+      const half = effectiveBeat * 0.5;
       const leftHz = Math.max(0.1, carrier - half);
       const rightHz = Math.max(0.1, carrier + half);
 
