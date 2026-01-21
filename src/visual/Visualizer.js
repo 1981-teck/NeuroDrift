@@ -10,10 +10,12 @@ export class Visualizer {
   }
 
   start(analyser) {
-    this._analyser = analyser;
+    // Stop any previous render loop first; stop() clears the analyser reference.
     this.stop();
+    this._analyser = analyser;
     this._draw();
   }
+
 
   stop() {
     if (this._raf) {
