@@ -4,11 +4,12 @@ export class AudioEngine {
   constructor() {
     this.ctx = null;
 
-    this.mainGain = null;
+    this.mainGain = null;   // master volume
+    this.mixBus = null;     // sums tone + noise
+
     this.toneGain = null;
     this.noiseGain = null;
 
-    this.compressor = null;
     this.analyser = null;
 
     this.merger = null;
@@ -16,7 +17,7 @@ export class AudioEngine {
     this.oscLeft = null;
     this.oscRight = null;
 
-    this.noiseNode = null;
+    this.noiseNode = null;      // AudioWorkletNode
     this.noiseFilter = null;
 
     this.isPlaying = false;
@@ -25,7 +26,9 @@ export class AudioEngine {
     this._beatHz = 6.0;
     this._binaural = true;
 
-    this._baseToneLevel = 0.5;
+    // Lower base tone level to keep headroom and avoid any borderline clipping.
+    // This also removes the need for a compressor (which can create pumping/click artifacts).
+    this._baseToneLevel = 0.35;
   }
 
   async ensureInit() {
@@ -34,14 +37,10 @@ export class AudioEngine {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     this.ctx = new AudioContext();
 
-    await this.ctx.audioWorklet.addModule(new URL('./worklets/colored-noise-processor.js', import.meta.url));
-
-    this.compressor = this.ctx.createDynamicsCompressor();
-    this.compressor.threshold.value = -12;
-    this.compressor.knee.value = 10;
-    this.compressor.ratio.value = 12;
-    this.compressor.attack.value = 0.003;
-    this.compressor.release.value = 0.25;
+    // Load noise worklet
+    await this.ctx.audioWorklet.addModule(
+      new URL('./worklets/colored-noise-processor.js', import.meta.url)
+    );
 
     this.analyser = this.ctx.createAnalyser();
     this.analyser.fftSize = 2048;
@@ -50,23 +49,33 @@ export class AudioEngine {
     this.mainGain = this.ctx.createGain();
     this.mainGain.gain.value = 0.33;
 
-    this.compressor.connect(this.analyser);
+    // Mix bus (tone + noise) -> analyser -> master -> destination
+    this.mixBus = this.ctx.createGain();
+    this.mixBus.gain.value = 1.0;
+
+    this.mixBus.connect(this.analyser);
     this.analyser.connect(this.mainGain);
     this.mainGain.connect(this.ctx.destination);
 
     this.toneGain = this.ctx.createGain();
     this.toneGain.gain.value = this._getTargetToneGain();
-    this.toneGain.connect(this.compressor);
+    this.toneGain.connect(this.mixBus);
 
     this.noiseGain = this.ctx.createGain();
     this.noiseGain.gain.value = 0.0;
-    this.noiseGain.connect(this.compressor);
+    this.noiseGain.connect(this.mixBus);
 
+    // Stereo merger for binaural routing
     this.merger = this.ctx.createChannelMerger(2);
     this.merger.connect(this.toneGain);
 
-    this.noiseNode = new AudioWorkletNode(this.ctx, 'colored-noise', { numberOfOutputs: 1, outputChannelCount: [1] });
+    // Noise generator (continuous, no loop clicks)
+    this.noiseNode = new AudioWorkletNode(this.ctx, 'colored-noise', {
+      numberOfOutputs: 1,
+      outputChannelCount: [1],
+    });
 
+    // Optional comfort filter on noise
     this.noiseFilter = this.ctx.createBiquadFilter();
     this.noiseFilter.type = 'lowpass';
     this.noiseFilter.frequency.value = AUDIO.NOISE_LP_FREQ;
@@ -75,6 +84,7 @@ export class AudioEngine {
     this.noiseNode.connect(this.noiseFilter);
     this.noiseFilter.connect(this.noiseGain);
 
+    // default: pink
     this.setNoiseColor(1.0, true);
   }
 
@@ -95,28 +105,34 @@ export class AudioEngine {
     this._beatHz = Number(beatHz);
     this._binaural = Boolean(binaural);
 
+    // Oscillators
     this.oscLeft = this.ctx.createOscillator();
     this.oscRight = this.ctx.createOscillator();
     this.oscLeft.type = 'sine';
     this.oscRight.type = 'sine';
 
+    // Routing + freq
     this._applyRouting(true);
     this._applyFrequencies(0.001, true);
 
     const now = this.ctx.currentTime;
 
+    // Master
     this.mainGain.gain.cancelScheduledValues(now);
     this.mainGain.gain.setValueAtTime(this.mainGain.gain.value, now);
     this.mainGain.gain.setTargetAtTime(Number(master), now, 0.05);
 
+    // Tone gain fade-in
     this.toneGain.gain.cancelScheduledValues(now);
     this.toneGain.gain.setValueAtTime(0, now);
     this.toneGain.gain.linearRampToValueAtTime(this._getTargetToneGain(), now + AUDIO.FADE_IN_TIME);
 
+    // Noise gain fade-in
     this.noiseGain.gain.cancelScheduledValues(now);
     this.noiseGain.gain.setValueAtTime(0, now);
     this.noiseGain.gain.linearRampToValueAtTime(Number(noiseVol), now + AUDIO.FADE_IN_TIME + 0.3);
 
+    // Noise color
     this.setNoiseColor(noiseColor, false);
 
     this.oscLeft.start();
@@ -139,8 +155,10 @@ export class AudioEngine {
 
     this.isPlaying = false;
 
+    // cleanup oscillators after fade
     window.setTimeout(() => {
       this._cleanupOscillators();
+      // suspend context to save CPU
       if (!this.isPlaying && this.ctx && this.ctx.state === 'running') {
         this.ctx.suspend().catch(() => {});
       }
@@ -209,7 +227,10 @@ export class AudioEngine {
 
     this.oscRight.frequency.cancelScheduledValues(now);
     this.oscRight.frequency.setValueAtTime(this.oscRight.frequency.value, now);
-    this.oscRight.frequency.linearRampToValueAtTime(carrier + Number(targetHz), now + Number(durationSeconds));
+    this.oscRight.frequency.linearRampToValueAtTime(
+      carrier + Number(targetHz),
+      now + Number(durationSeconds)
+    );
   }
 
   _getTargetToneGain() {
