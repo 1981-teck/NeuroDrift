@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeuroDrift Ultimate</title>
+  <link rel="stylesheet" href="/src/styles/main.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <span class="logo">NeuroDrift Ultimate</span>
+      <span class="timer-badge" id="timerDisplay">READY</span>
+    </div>
+
+    <!-- NON TOCCARE: Sleep / Meditate / Focus -->
+    <div class="preset-bar" id="presetBar">
+      <button class="preset-btn" type="button" data-preset="sleep"><span>😴</span><span>Sleep</span></button>
+      <button class="preset-btn" type="button" data-preset="meditate"><span>🧘</span><span>Meditate</span></button>
+      <button class="preset-btn" type="button" data-preset="focus"><span>⚡</span><span>Focus</span></button>
+    </div>
+
+    <canvas id="visualizer"></canvas>
+
+    <!-- 1) Brainwave frequency -->
+    <div class="control-group">
+      <div class="label-row">
+        <label for="freqSlider">Brainwave Frequency</label>
+        <span id="freqVal" class="value-text">6.0 Hz</span>
+      </div>
+      <span class="sub-label" id="freqType">Theta — Deep Meditation</span>
+      <input type="range" id="freqSlider" min="0.5" max="40" value="6" step="0.1" />
+    </div>
+
+    <!-- 2) Carrier tone -->
+    <div class="control-group">
+      <div class="label-row">
+        <label for="toneSlider">Carrier Tone</label>
+        <span id="toneVal" class="value-text">200 Hz</span>
+      </div>
+      <span class="sub-label">Base frequency for binaural beats</span>
+      <input type="range" id="toneSlider" min="60" max="600" value="200" step="1" />
+    </div>
+
+    <!-- 3) Noise color (white -> pink) -->
+    <div class="control-group">
+      <div class="label-row">
+        <label for="noiseColorSlider">Noise Color</label>
+        <span id="noiseColorVal" class="value-text">Pink</span>
+      </div>
+      <span class="sub-label">Morph from White (0%) to Pink (100%)</span>
+      <input type="range" id="noiseColorSlider" min="0" max="1" value="1" step="0.01" />
+    </div>
+
+    <!-- 4) Master volume + 5) Noise volume -->
+    <div class="control-group">
+      <div class="mixer-row">
+        <span class="mixer-title">Volumes</span>
+        <span id="masterVal" class="value-text">33%</span>
+      </div>
+      <span class="sub-label">Master + Noise volume</span>
+
+      <div class="label-row" style="margin-top: 10px;">
+        <label for="masterSlider">Master Volume</label>
+        <span id="masterVal2" class="value-text">33%</span>
+      </div>
+      <input type="range" id="masterSlider" min="0" max="1" value="0.33" step="0.01" />
+
+      <div class="label-row" style="margin-top: 14px;">
+        <label for="noiseVolSlider">Noise Volume</label>
+        <span id="noiseVolVal" class="value-text">None</span>
+      </div>
+      <input type="range" id="noiseVolSlider" min="0" max="0.6" value="0" step="0.01" />
+    </div>
+
+    <!-- 6) Session time + 7) Auto sweep button + 7) Binaural mode button -->
+    <div class="control-group">
+      <div class="label-row">
+        <label for="timerSlider">Session Time</label>
+        <span id="timerVal" class="value-text">OFF</span>
+      </div>
+      <span class="sub-label">Set automatic session duration</span>
+      <input type="range" id="timerSlider" min="0" max="120" value="0" step="5" />
+
+      <div class="button-row">
+        <button id="sweepBtn" class="toggle-btn" type="button" aria-pressed="false">Auto Sweep: OFF</button>
+        <button id="binauralBtn" class="toggle-btn active" type="button" aria-pressed="true">Binaural: ON</button>
+      </div>
+      <div class="hint-row">Auto Sweep ramps beat frequency down to 1Hz across the session.</div>
+    </div>
+
+    <!-- 8) Start session -->
+    <button id="startBtn" type="button"><span>Start Session</span></button>
+
+    <div class="footer">v3.3 — Use headphones for optimal binaural effect</div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
