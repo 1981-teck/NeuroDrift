@@ -26,10 +26,11 @@ export class AudioEngine {
     this._beatHz = 6.0;
     this._binaural = true;
 
-    // Lower base tone level to keep headroom and avoid any borderline clipping.
-    // This also removes the need for a compressor (which can create pumping/click artifacts).
+    // Keep headroom to avoid clipping. Removing the compressor avoids pumping/click artifacts.
     this._baseToneLevel = 0.35;
-    this._beatVolume = 0.35; // new: slider Beats Volume 
+
+    // User-controlled tone (carrier/binaural) volume
+    this._beatVolume = 0.35;
   }
 
   async ensureInit() {
@@ -54,16 +55,36 @@ export class AudioEngine {
     this.mixBus = this.ctx.createGain();
     this.mixBus.gain.value = 1.0;
 
+    // Keep pipeline explicitly stereo to reduce unintended downmix/crosstalk effects
+    // (some environments do unexpected channel policy changes that can accentuate low-beat "ticks").
+    for (const n of [this.mixBus, this.analyser, this.mainGain]) {
+      try {
+        n.channelCount = 2;
+        n.channelCountMode = 'explicit';
+        n.channelInterpretation = 'speakers';
+      } catch (_) {}
+    }
+
     this.mixBus.connect(this.analyser);
     this.analyser.connect(this.mainGain);
     this.mainGain.connect(this.ctx.destination);
 
     this.toneGain = this.ctx.createGain();
     this.toneGain.gain.value = this._getTargetToneGain();
+    try {
+      this.toneGain.channelCount = 2;
+      this.toneGain.channelCountMode = 'explicit';
+      this.toneGain.channelInterpretation = 'speakers';
+    } catch (_) {}
     this.toneGain.connect(this.mixBus);
 
     this.noiseGain = this.ctx.createGain();
     this.noiseGain.gain.value = 0.0;
+    try {
+      this.noiseGain.channelCount = 2;
+      this.noiseGain.channelCountMode = 'explicit';
+      this.noiseGain.channelInterpretation = 'speakers';
+    } catch (_) {}
     this.noiseGain.connect(this.mixBus);
 
     // Stereo merger for binaural routing
@@ -189,6 +210,13 @@ export class AudioEngine {
     this.noiseGain.gain.setTargetAtTime(Number(v), now, 0.1);
   }
 
+  setBeatVolume(v) {
+    this._beatVolume = Math.min(1, Math.max(0, Number(v)));
+    if (!this.toneGain || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    this.toneGain.gain.setTargetAtTime(this._getTargetToneGain(), now, 0.08);
+  }
+
   setNoiseColor(color, immediate = false) {
     if (!this.noiseNode || !this.ctx) return;
     const c = Math.min(1, Math.max(0, Number(color)));
@@ -222,24 +250,31 @@ export class AudioEngine {
     this._applyRouting(false);
   }
 
-  setBeatVolume(v) {
-    this._beatVolume = Math.min(1, Math.max(0, Number(v)));
-    if (!this.toneGain || !this.ctx) return;
-    const now = this.ctx.currentTime;
-    this.toneGain.gain.setTargetAtTime(this._getTargetToneGain(), now, 0.08);
-  }
-
   rampBeatTo(targetHz, durationSeconds) {
     if (!this.ctx || !this.oscRight || !this.oscLeft) return;
+
+    const target = Number(targetHz);
+    const duration = Number(durationSeconds);
+    if (!Number.isFinite(target) || !Number.isFinite(duration) || duration <= 0) return;
+
+    this._beatHz = target;
+
     const now = this.ctx.currentTime;
     const carrier = this._carrierTone;
 
+    // Symmetric binaural pair around carrier
+    const half = target * 0.5;
+    const leftTarget = Math.max(0.1, carrier - half);
+    const rightTarget = Math.max(0.1, carrier + half);
+
+    this.oscLeft.frequency.cancelScheduledValues(now);
     this.oscRight.frequency.cancelScheduledValues(now);
+
+    this.oscLeft.frequency.setValueAtTime(this.oscLeft.frequency.value, now);
     this.oscRight.frequency.setValueAtTime(this.oscRight.frequency.value, now);
-    this.oscRight.frequency.linearRampToValueAtTime(
-      carrier + Number(targetHz),
-      now + Number(durationSeconds)
-    );
+
+    this.oscLeft.frequency.linearRampToValueAtTime(leftTarget, now + duration);
+    this.oscRight.frequency.linearRampToValueAtTime(rightTarget, now + duration);
   }
 
   _getTargetToneGain() {
@@ -272,8 +307,14 @@ export class AudioEngine {
       const carrier = this._carrierTone;
       const beat = this._beatHz;
 
-      this.oscLeft.frequency.setTargetAtTime(carrier, now, ramp);
-      this.oscRight.frequency.setTargetAtTime(carrier + beat, now, ramp);
+      // Symmetric binaural pair around carrier:
+      // L = carrier - beat/2, R = carrier + beat/2
+      const half = beat * 0.5;
+      const leftHz = Math.max(0.1, carrier - half);
+      const rightHz = Math.max(0.1, carrier + half);
+
+      this.oscLeft.frequency.setTargetAtTime(leftHz, now, ramp);
+      this.oscRight.frequency.setTargetAtTime(rightHz, now, ramp);
     } catch (e) {
       if (force) throw e;
     }
