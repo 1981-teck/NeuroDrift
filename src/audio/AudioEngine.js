@@ -29,6 +29,7 @@ export class AudioEngine {
     // Lower base tone level to keep headroom and avoid any borderline clipping.
     // This also removes the need for a compressor (which can create pumping/click artifacts).
     this._baseToneLevel = 0.35;
+    this._beatVolume = 0.35; // new: slider Beats Volume 
   }
 
   async ensureInit() {
@@ -97,13 +98,14 @@ export class AudioEngine {
     return this.analyser;
   }
 
-  async start({ master, noiseVol, noiseColor, carrierTone, beatHz, binaural }) {
+  async start({ master, noiseVol, noiseColor, carrierTone, beatHz, binaural, beatVol }) {
     await this.resumeIfNeeded();
     if (this.isPlaying) return;
 
     this._carrierTone = Number(carrierTone);
     this._beatHz = Number(beatHz);
     this._binaural = Boolean(binaural);
+    this._beatVolume = Math.min(1, Math.max(0, Number(beatVol)));
 
     // Oscillators
     this.oscLeft = this.ctx.createOscillator();
@@ -220,6 +222,13 @@ export class AudioEngine {
     this._applyRouting(false);
   }
 
+  setBeatVolume(v) {
+    this._beatVolume = Math.min(1, Math.max(0, Number(v)));
+    if (!this.toneGain || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    this.toneGain.gain.setTargetAtTime(this._getTargetToneGain(), now, 0.08);
+  }
+
   rampBeatTo(targetHz, durationSeconds) {
     if (!this.ctx || !this.oscRight || !this.oscLeft) return;
     const now = this.ctx.currentTime;
@@ -234,7 +243,7 @@ export class AudioEngine {
   }
 
   _getTargetToneGain() {
-    const base = this._baseToneLevel;
+    const base = this._beatVolume;
     return this._binaural ? base : (base * AUDIO.MONAURAL_COMP);
   }
 

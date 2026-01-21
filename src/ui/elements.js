@@ -12,6 +12,8 @@ export function getUI() {
 
     noiseColorSlider: document.getElementById('noiseColorSlider'),
     masterSlider: document.getElementById('masterSlider'),
+    beatVolSlider: document.getElementById('beatVolSlider'),
+    beatVolVal: document.getElementById('beatVolVal'),
     noiseVolSlider: document.getElementById('noiseVolSlider'),
 
     timerSlider: document.getElementById('timerSlider'),

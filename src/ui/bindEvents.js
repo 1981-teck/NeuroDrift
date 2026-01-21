@@ -1,4 +1,5 @@
-import { formatTimerValue, updateNoiseColorUI, updateMasterUI, updateNoiseVolUI } from './render.js';
+import { formatTimerValue, updateNoiseColorUI, updateMasterUI, updateNoiseVolUI, updateBeatVolUI } from './render.js';
+
 
 export function bindEvents(ui, app) {
   ui.startBtn.addEventListener('click', () => app.togglePlay());
@@ -19,6 +20,8 @@ export function bindEvents(ui, app) {
 
   ui.freqSlider.addEventListener('input', (e) => app.onFreqChange(e.target.value));
   ui.toneSlider.addEventListener('input', (e) => app.onToneChange(e.target.value));
+  ui.beatVolSlider.addEventListener('input', (e) => app.onBeatVolChange(e.target.value));
+
 
   ui.noiseColorSlider.addEventListener('input', (e) => app.onNoiseColorChange(e.target.value));
   ui.masterSlider.addEventListener('input', (e) => app.onMasterChange(e.target.value));
@@ -35,4 +38,5 @@ export function bindEvents(ui, app) {
   updateMasterUI(ui);
   updateNoiseVolUI(ui);
   updateNoiseColorUI(ui);
+  updateBeatVolUI(ui);
 }

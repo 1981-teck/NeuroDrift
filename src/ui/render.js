@@ -47,6 +47,12 @@ export function updateNoiseVolUI(ui) {
   ui.noiseVolVal.textContent = nv === 0 ? 'None' : `${Math.round(nv * 100)}%`;
 }
 
+export function updateBeatVolUI(ui) {
+  const bv = parseFloat(ui.beatVolSlider.value);
+  ui.beatVolVal.textContent = `${Math.round(bv * 100)}%`;
+}
+
+
 export function setTimerBadge(ui, text, { active = false, ending = false } = {}) {
   ui.timerDisplay.textContent = text;
   ui.timerDisplay.classList.toggle('active', active);

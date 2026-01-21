@@ -6,6 +6,7 @@ import {
   updateNoiseColorUI,
   updateMasterUI,
   updateNoiseVolUI,
+  updateBeatVolUI,
   setTimerBadge,
   setToggleButton,
 } from '../ui/render.js';
@@ -28,6 +29,7 @@ export class AppController {
     updateToneUI(this.ui, this.ui.toneSlider.value);
     updateNoiseColorUI(this.ui);
     updateMasterUI(this.ui);
+    updateBeatVolUI(this.ui);
     updateNoiseVolUI(this.ui);
 
     setToggleButton(this.ui.sweepBtn, state.autoSweep, 'Auto Sweep: ON', 'Auto Sweep: OFF');
@@ -47,13 +49,14 @@ export class AppController {
     const ui = this.ui;
 
     const master = Number(ui.masterSlider.value);
+    const beatVol = Number(ui.beatVolSlider.value);
     const noiseVol = Number(ui.noiseVolSlider.value);
     const noiseColor = Number(ui.noiseColorSlider.value);
     const carrierTone = Number(ui.toneSlider.value);
     const beatHz = Number(ui.freqSlider.value);
     const binaural = state.binaural;
 
-    await this.engine.start({ master, noiseVol, noiseColor, carrierTone, beatHz, binaural });
+    await this.engine.start({ master, noiseVol, noiseColor, carrierTone, beatHz, binaural, beatVol });
     state.isPlaying = true;
 
     ui.startBtn.innerHTML = '<span>Stop Session</span>';
@@ -71,7 +74,10 @@ export class AppController {
       onTick: ({ remaining, total, elapsed }) => {
         const m = Math.floor(remaining / 60);
         const s = remaining % 60;
-        setTimerBadge(ui, `${m}:${String(s).padStart(2, '0')}`, { active: true, ending: remaining <= AUDIO.TIMER_WARNING_SECONDS });
+        setTimerBadge(ui, `${m}:${String(s).padStart(2, '0')}`, {
+          active: true,
+          ending: remaining <= AUDIO.TIMER_WARNING_SECONDS,
+        });
 
         if (state.autoSweep && this._startFreq > 1 && total > 0) {
           const progress = Math.min(1, elapsed / total);
@@ -112,12 +118,18 @@ export class AppController {
     ui.noiseVolSlider.value = String(p.noiseVol ?? 0);
     ui.noiseColorSlider.value = String(p.noiseColor ?? 1);
 
+    // Optional: allow preset to set beats volume if present; otherwise keep current slider value.
+    if (p.beatVol != null && ui.beatVolSlider) {
+      ui.beatVolSlider.value = String(p.beatVol);
+    }
+
     updateBrainwaveUI(ui, p.freq);
     updateToneUI(ui, p.tone);
     updateNoiseVolUI(ui);
     updateNoiseColorUI(ui);
+    updateBeatVolUI(ui);
 
-    ui.presetBtns.forEach(b => b.classList.remove('active'));
+    ui.presetBtns.forEach((b) => b.classList.remove('active'));
     if (btnEl) btnEl.classList.add('active');
 
     if (state.isPlaying) {
@@ -125,6 +137,8 @@ export class AppController {
       this.engine.setBeatFrequency(p.freq);
       this.engine.setNoiseVolume(p.noiseVol ?? 0);
       this.engine.setNoiseColor(p.noiseColor ?? 1);
+
+      if (p.beatVol != null) this.engine.setBeatVolume(p.beatVol);
     }
   }
 
@@ -133,7 +147,7 @@ export class AppController {
   onFreqChange(val) {
     updateBrainwaveUI(this.ui, val);
     if (state.isPlaying) this.engine.setBeatFrequency(val);
-    this.ui.presetBtns.forEach(b => b.classList.remove('active'));
+    this.ui.presetBtns.forEach((b) => b.classList.remove('active'));
   }
 
   onToneChange(val) {
@@ -149,6 +163,11 @@ export class AppController {
   onMasterChange(val) {
     updateMasterUI(this.ui);
     if (state.isPlaying) this.engine.setMasterVolume(val);
+  }
+
+  onBeatVolChange(val) {
+    updateBeatVolUI(this.ui);
+    if (state.isPlaying) this.engine.setBeatVolume(val);
   }
 
   onNoiseVolChange(val) {
