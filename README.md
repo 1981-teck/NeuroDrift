@@ -1,4 +1,4 @@
-[![Deploy Status](https://img.shields.io/badge/Demo-Live%20App-brightgreen)](https://1981-teck.github.io/NeuroDrift)
+[![NeuroDrift](https://img.shields.io/badge/Launch-Live%20App-brightgreen)](https://1981-teck.github.io/NeuroDrift)
 # NeuroDrift Ultimate (Browser)
 
 WebAudio binaural beats + continuous morphable noise (White → Pink) with:
